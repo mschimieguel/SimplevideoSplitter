@@ -48,19 +48,16 @@ def write_to_console(message):
 
 # Create a new Tkinter window
 window = tk.Tk()
-window.title("My Window")
+window.title("Video Splitter - Divisor de Videos")
 
-# Create a label widget
-label = tk.Label(window, text="Choose a video file:")
+label = tk.Label(window, text="Escolha um Video Para Dividir:")
 label.pack()
 
 # Create a canvas widget to display the video thumbnail
-canvas = tk.Canvas(window, width=320, height=240)
+canvas = tk.Canvas(window,width=0, height=0)
 canvas.pack()
 
-# Create a label widget to display the selected file name
-selected_file_label = tk.Label(window, text="")
-selected_file_label.pack()
+
 
 # Create a button widget to open a file dialog
 selected_file_path=""
@@ -68,8 +65,9 @@ def choose_file():
     global selected_file_path
     selected_file_path = filedialog.askopenfilename()
     selected_file_name = os.path.basename(selected_file_path)
-    selected_file_label.configure(text="Selected file: " + selected_file_name)
-    
+    if(selected_file_path != ""):
+        selected_file_label.configure(text="Video Selecionado: " + selected_file_name,fg="green")
+        canvas.configure(width=320, height=240)
     # Generate a thumbnail image from the video file
     cap = cv2.VideoCapture(selected_file_path)
     
@@ -102,13 +100,16 @@ def choose_file():
     
     cap.release()
 
-browse_button = tk.Button(window, text="Browse", command=choose_file)
+browse_button = tk.Button(window, text="Selecionar Video", command=choose_file,bg="green",fg="white")
 browse_button.pack()
 
+selected_file_label = tk.Label(window, text="")
+selected_file_label.pack()
+
 # Create a second label widget and a scrolled text input widget
-label2 = tk.Label(window, text="Enter some text:")
+label2 = tk.Label(window, text="Coloque aqui os momentos que deja cortar o video (formato hh:mm:ss)\n ")
 label2.pack()
-text_input = scrolledtext.ScrolledText(window, height=16, width=50)
+text_input = scrolledtext.ScrolledText(window, height=15, width=50)
 text_input.pack(fill="both", expand=True)
 
 def run_command():
@@ -119,10 +120,10 @@ def run_command():
     print(start_times)
     print(text_input.get("1.0", "end-1c"))
     if (selected_file_path == ""):
-        messagebox.showwarning("No File Selected", "Please select a file before running the command.")
+        messagebox.showwarning("Nenhum Video Selecionado", "Por Favor Escolha um Video")
         return
     if ( len(start_times) <= 0 ):
-        messagebox.showwarning("Sem Tempos de Capitulos", "Please select a file before running the command.")
+        messagebox.showwarning("Sem Tempos de Capitulos", "Por favor Coloque os tempos em que se deseja dividir o video")
         return
     
     sys.stdout.write = write_to_console
@@ -131,11 +132,13 @@ def run_command():
     for i,time in enumerate(start_times):
         start_times[i] = ":".join(time)
 
+    file_name = selected_file_path.split('/')[-1].split('.')[0]
     # Path to the output directory for the chapter files
-    if(not os.path.exists("Capitulos/")):
-        os.makedirs("Capitulos")
-    output_dir_path = os.path.join(  os.path.dirname(selected_file_path),"Capitulos")
+    
+    output_dir_path = os.path.join(  os.path.dirname(selected_file_path),f"Capitulos_{file_name}/")
     output_dir_path = output_dir_path.replace('\\','/')
+    if(not os.path.exists(output_dir_path)):
+        os.makedirs(output_dir_path)
     print(output_dir_path)
 
     # Load the video file and get its total duration in seconds
@@ -151,7 +154,7 @@ def run_command():
     #output_text.delete("1.0", "end")
     #output_text.insert("1.0", result.stdout.decode('utf-8', errors='ignore') + result.stderr.decode('utf-8', errors='ignore'))
 
-run_button = tk.Button(window, text="Run", command=run_command, bg="green", fg="white")
+run_button = tk.Button(window, text="Dividir Video", command=run_command, bg="green", fg="white")
 run_button.pack()
 
 def clear_text(widget):
