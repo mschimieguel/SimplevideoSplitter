@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import filedialog, scrolledtext
 import os
@@ -7,26 +8,21 @@ from PIL import Image, ImageTk
 import subprocess
 import re
 from moviepy.video.io.VideoFileClip import VideoFileClip
+import sys
 
+# global list to store all threads
+threads = []
 
-def video_spliter(start_times,input_file_path):
-    
-    for i,time in enumerate(start_times):
-        start_times[i] = ":".join(time)
-    #juntarCapitulos = input("Deseja Juntar Capitulos ?(S para sim )")
+def on_closing():
+    # iterate through all threads and join them
+    #for t in threads:
+    #    t.join()
+        
+    # destroy the main window and exit the program
+    window.destroy()
+    sys.exit()
 
-
-    #start_times = ["00:00:00", "00:03:19", "00:06:32", "00:09:39", "00:16:34", "00:21:31", "00:27:35", "00:34:37", "00:41:18", "00:45:34", "00:50:34", "00:58:49", "01:00:45", "01:12:47", "01:23:47", "01:29:26", "01:37:05", "01:40:30", "01:45:21", "01:52:09", "01:58:07", "02:02:16", "02:08:30", "02:17:14", "02:21:10", "02:31:25"]
-
-    # Path to the input video file
-
-    # Path to the output directory for the chapter files
-    if(not os.path.exists("Capitulos/")):
-        os.makedirs("Capitulos")
-    output_dir_path = "Capitulos/"
-
-    # Load the video file and get its total duration in seconds
-    video = VideoFileClip(input_file_path)
+def video_spliter(start_times,video,input_file_path,output_dir_path):
     total_duration = video.duration
 
     # Loop through each start time, extract the corresponding chapter from the video,
@@ -38,9 +34,17 @@ def video_spliter(start_times,input_file_path):
         else:
             # Regular chapter: extract until the start of the next chapter
             end_time = start_times[i+1]
-        output_file_path = os.path.join(output_dir_path, f"{input_file_path.split('.')[0]} Capítulo {i+1}.mp4")
+        print(output_dir_path)
+        print(f"{input_file_path.split('.')[0]} Capítulo {i+1}.mp4")    
+        output_file_path = os.path.join(output_dir_path, f"{input_file_path.split('/')[-1].split('.')[0]} Capítulo {i+1}.mp4")
+        print(output_file_path)
         clip = video.subclip(start_time, end_time)
         clip.write_videofile(output_file_path)
+    sys.exit()
+
+def write_to_console(message):
+    output_text.delete("1.0", tk.END)
+    output_text.insert(tk.END, message)
 
 # Create a new Tkinter window
 window = tk.Tk()
@@ -104,10 +108,11 @@ browse_button.pack()
 # Create a second label widget and a scrolled text input widget
 label2 = tk.Label(window, text="Enter some text:")
 label2.pack()
-text_input = scrolledtext.ScrolledText(window, height=8, width=50)
+text_input = scrolledtext.ScrolledText(window, height=16, width=50)
 text_input.pack(fill="both", expand=True)
 
 def run_command():
+ 
     pattern = r'(\d{2}):(\d{2}):(\d{2})'
     start_times = re.findall(pattern, text_input.get("1.0", "end-1c"))
     
@@ -119,7 +124,28 @@ def run_command():
     if ( len(start_times) <= 0 ):
         messagebox.showwarning("Sem Tempos de Capitulos", "Please select a file before running the command.")
         return
-    video_spliter(start_times,selected_file_path)
+    
+    sys.stdout.write = write_to_console
+    sys.stderr.write = write_to_console
+
+    for i,time in enumerate(start_times):
+        start_times[i] = ":".join(time)
+
+    # Path to the output directory for the chapter files
+    if(not os.path.exists("Capitulos/")):
+        os.makedirs("Capitulos")
+    output_dir_path = os.path.join(  os.path.dirname(selected_file_path),"Capitulos")
+    output_dir_path = output_dir_path.replace('\\','/')
+    print(output_dir_path)
+
+    # Load the video file and get its total duration in seconds
+    video = VideoFileClip(selected_file_path)
+    t = threading.Thread(target=video_spliter, args=(start_times,video,selected_file_path,output_dir_path),daemon=True)
+    t.start()
+    # add the thread to the global list
+    threads.append(t)
+
+    #video_spliter(start_times,video,output_dir_path)
     # command = text_input.get("1.0", "end-1c")
     # result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     #output_text.delete("1.0", "end")
@@ -128,9 +154,19 @@ def run_command():
 run_button = tk.Button(window, text="Run", command=run_command, bg="green", fg="white")
 run_button.pack()
 
+def clear_text(widget):
+    widget.delete("1.0", tk.END)
+    widget.after(500, clear_text, widget)
+
 # Create a scrolled text widget to display the output
-output_text = scrolledtext.ScrolledText(window, height=8, width=50)
+output_text = scrolledtext.ScrolledText(window, height=1, width=50,fg="green")
+#output_text.pack()
 output_text.pack(fill="both", expand=True)
+
+#clear_text(output_text)
+
+# create a function to handle window closing
+window.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Run the main event loop
 window.mainloop()
