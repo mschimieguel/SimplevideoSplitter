@@ -48,26 +48,20 @@ def write_to_console(message):
 
 # Create a new Tkinter window
 window = tk.Tk()
-window.title("Video Splitter - Divisor de Videos")
-
-label = tk.Label(window, text="Escolha um Video Para Dividir:")
-label.pack()
-
-# Create a canvas widget to display the video thumbnail
-canvas = tk.Canvas(window,width=0, height=0)
-canvas.pack()
 
 
-
-# Create a button widget to open a file dialog
+window.title("Video Splitter - Particionador de Videos")
 selected_file_path=""
+
 def choose_file():
     global selected_file_path
     selected_file_path = filedialog.askopenfilename()
     selected_file_name = os.path.basename(selected_file_path)
     if(selected_file_path != ""):
         selected_file_label.configure(text="Video Selecionado: " + selected_file_name,fg="green")
-        canvas.configure(width=320, height=240)
+        canvas.configure(width=200, height=150)
+        
+        
     # Generate a thumbnail image from the video file
     cap = cv2.VideoCapture(selected_file_path)
     
@@ -83,7 +77,7 @@ def choose_file():
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         # Resize the frame to the canvas size
-        thumbnail = cv2.resize(frame, (320, 240))
+        thumbnail = cv2.resize(frame, (200, 150))
         
         # Convert the OpenCV image to a PIL Image object
         img = Image.fromarray(thumbnail)
@@ -100,16 +94,25 @@ def choose_file():
     
     cap.release()
 
+label = tk.Label(window, text="Escolha um Video Para Dividir:")
+label.pack()
+
+
+
 browse_button = tk.Button(window, text="Selecionar Video", command=choose_file,bg="green",fg="white")
 browse_button.pack()
 
 selected_file_label = tk.Label(window, text="")
 selected_file_label.pack()
 
+# Create a canvas widget to display the video thumbnail
+canvas = tk.Canvas(window,width=0, height=0)
+canvas.pack()
+
 # Create a second label widget and a scrolled text input widget
 label2 = tk.Label(window, text="Coloque aqui os momentos que deja cortar o video (formato hh:mm:ss)\n ")
 label2.pack()
-text_input = scrolledtext.ScrolledText(window, height=15, width=50)
+text_input = scrolledtext.ScrolledText(window, height=12, width=30)
 text_input.pack(fill="both", expand=True)
 
 def run_command():
@@ -162,7 +165,7 @@ def clear_text(widget):
     widget.after(500, clear_text, widget)
 
 # Create a scrolled text widget to display the output
-output_text = scrolledtext.ScrolledText(window, height=1, width=50,fg="green")
+output_text = scrolledtext.ScrolledText(window, height=1, width=30,fg="green")
 #output_text.pack()
 output_text.pack(fill="both", expand=True)
 
