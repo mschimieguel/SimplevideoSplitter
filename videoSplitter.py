@@ -9,9 +9,16 @@ import subprocess
 import re
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import sys
+from io import StringIO
 
 # global list to store all threads
 threads = []
+stdout_io = StringIO()
+stderr_io = StringIO()
+sys.stdout = stdout_io
+sys.stderr = stderr_io
+
+
 
 def on_closing():
     # iterate through all threads and join them
@@ -34,12 +41,13 @@ def video_spliter(start_times,video,input_file_path,output_dir_path):
         else:
             # Regular chapter: extract until the start of the next chapter
             end_time = start_times[i+1]
-        print(output_dir_path)
-        print(f"{input_file_path.split('.')[0]} Capítulo {i+1}.mp4")    
+        #print(output_dir_path)
+        #print(f"{input_file_path.split('.')[0]} Capítulo {i+1}.mp4")    
         output_file_path = os.path.join(output_dir_path, f"{input_file_path.split('/')[-1].split('.')[0]} Capítulo {i+1}.mp4")
-        print(output_file_path)
+        #print(output_file_path)
         clip = video.subclip(start_time, end_time)
         clip.write_videofile(output_file_path)
+        print("*****************Video Completamente Dividido - Operacao Finalizada*****************")
     sys.exit()
 
 def write_to_console(message):
@@ -48,9 +56,14 @@ def write_to_console(message):
 
 # Create a new Tkinter window
 window = tk.Tk()
-
-
 window.title("Video Splitter - Particionador de Videos")
+
+
+# Redirect stdout and stderr to a file
+output_file = open("console_output.txt", "w+")
+sys.stdout = output_file
+sys.stderr = output_file
+
 selected_file_path=""
 
 def choose_file():
@@ -120,8 +133,8 @@ def run_command():
     pattern = r'(\d{2}):(\d{2}):(\d{2})'
     start_times = re.findall(pattern, text_input.get("1.0", "end-1c"))
     
-    print(start_times)
-    print(text_input.get("1.0", "end-1c"))
+    #print(start_times)
+    #print(text_input.get("1.0", "end-1c"))
     if (selected_file_path == ""):
         messagebox.showwarning("Nenhum Video Selecionado", "Por Favor Escolha um Video")
         return
@@ -129,8 +142,8 @@ def run_command():
         messagebox.showwarning("Sem Tempos de Capitulos", "Por favor Coloque os tempos em que se deseja dividir o video")
         return
     
-    sys.stdout.write = write_to_console
-    sys.stderr.write = write_to_console
+    #sys.stdout.write = write_to_console
+    #sys.stderr.write = write_to_console
 
     for i,time in enumerate(start_times):
         start_times[i] = ":".join(time)
@@ -142,7 +155,7 @@ def run_command():
     output_dir_path = output_dir_path.replace('\\','/')
     if(not os.path.exists(output_dir_path)):
         os.makedirs(output_dir_path)
-    print(output_dir_path)
+    #print(output_dir_path)
 
     # Load the video file and get its total duration in seconds
     video = VideoFileClip(selected_file_path)
@@ -164,10 +177,50 @@ def clear_text(widget):
     widget.delete("1.0", tk.END)
     widget.after(500, clear_text, widget)
 
+def update_output_text():
+    # Read the contents of the output file
+    with open("console_output.txt", "r") as f:
+        output = f.readlines()
+    output = output[-1] if output else ""
+    output= output.replace("|1","|\u258F")
+    output= output.replace("|2","|\u258E")
+    output= output.replace("|3","|\u258D")
+    output= output.replace("|4","|\u258D")
+    output= output.replace("|5","|\u258C")
+    output= output.replace("|6","|\u258C")
+    output= output.replace("|7","|\u258B")
+    output= output.replace("|8","|\u258A")
+    output= output.replace("|9","|\u2589")
+    output= output.replace("#1","#\u258F")
+    output= output.replace("#2","#\u258E")
+    output= output.replace("#3","#\u258D")
+    output= output.replace("#4","#\u258D")
+    output= output.replace("#5","#\u258C")
+    output= output.replace("#6","#\u258C")
+    output= output.replace("#7","#\u258B")
+    output= output.replace("#8","#\u258A")
+    output= output.replace("#9","#\u2589")
+
+
+    output = output.replace('#', '\u2588')
+    #output = output_file.read()
+    #output= output[-1]
+    
+    # Update the output_text widget with the contents of the output file
+    output_text.delete(1.0, tk.END)
+    output_text.insert(tk.END, output)
+    window.after(100, update_output_text)
+    # Schedule the update_output_text function to be called again in 100 milliseconds    
+
 # Create a scrolled text widget to display the output
 output_text = scrolledtext.ScrolledText(window, height=1, width=30,fg="green")
 #output_text.pack()
 output_text.pack(fill="both", expand=True)
+
+
+
+# Start the recursive update_console_output() function
+update_output_text()
 
 #clear_text(output_text)
 
