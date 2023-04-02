@@ -17,8 +17,17 @@ stdout_io = StringIO()
 stderr_io = StringIO()
 sys.stdout = stdout_io
 sys.stderr = stderr_io
+global text_input 
 
-
+def format_duration(seconds):
+    # Calculate hours, minutes and seconds
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    
+    # Return formatted string
+    return '{:02d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
 
 def on_closing():
     # iterate through all threads and join them
@@ -125,13 +134,29 @@ canvas.pack()
 # Create a second label widget and a scrolled text input widget
 label2 = tk.Label(window, text="Coloque aqui os momentos que deja cortar o video (formato hh:mm:ss)\n ")
 label2.pack()
+
 text_input = scrolledtext.ScrolledText(window, height=12, width=30)
 text_input.pack(fill="both", expand=True)
 
 def run_command():
- 
-    pattern = r'(\d{2}):(\d{2}):(\d{2})'
-    start_times = re.findall(pattern, text_input.get("1.0", "end-1c"))
+    pattern1 = "(\d{2}):(\d{2}):(\d{2})"
+    pattern2 = "g\?t=(\d+)"
+    text = text_input.get("1.0", "end-1c")
+    text = text.split("\n")
+    
+    start_times = []
+    for line in text:
+        match = re.search(pattern1, line)
+        if match:
+            value = match.group()
+            start_times.append(value)
+            #print(value)
+        match2 = re.search(pattern2, line)
+        if match2:
+            value2 = int(match2.group(1))
+            value2= format_duration(value2)
+            start_times.append(value2)
+            #print(value2)
     
     #print(start_times)
     #print(text_input.get("1.0", "end-1c"))
@@ -145,8 +170,8 @@ def run_command():
     #sys.stdout.write = write_to_console
     #sys.stderr.write = write_to_console
 
-    for i,time in enumerate(start_times):
-        start_times[i] = ":".join(time)
+    # for i,time in enumerate(start_times):
+    #     start_times[i] = ":".join(time)
 
     file_name = selected_file_path.split('/')[-1].split('.')[0]
     # Path to the output directory for the chapter files
